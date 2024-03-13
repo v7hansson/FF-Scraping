@@ -5,14 +5,22 @@ from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen
 import re
 import requests
-leagueID = input("Enter League ID: ")
-league_name = input ("League Name: ")
-season = input("Season: ")
+from cookieString import cookies
+
+leagueID = "1609009"
+league_name = "Couch Quarterbacks"
+season = "2023"
+
+
+### TODO:
+# Figure out what stats I actually want to aggregate for a nice viz
+# Fix Opponent/Opponent Total
+
 
 #gets the total numver of players in a given season
 def get_numberofowners() :
 	owners_url = 'https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/owners'
-	owners_page = requests.get(owners_url)
+	owners_page = requests.get(owners_url, cookies=cookies)
 	owners_html = owners_page.text
 	#owners_page.close()
 	owners_soup = bs(owners_html, 'html.parser')
@@ -24,7 +32,7 @@ number_of_owners = get_numberofowners() #number of teams in the league
 #gets the team id number from a player name, currently unused
 def getteamid(player) :
 	url = 'https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/owners'
-	page = requests.get(url)
+	page = requests.get(url, cookies=cookies)
 	html = page.text
 	#page.close()
 	soup = bs(html, 'html.parser')
@@ -39,7 +47,7 @@ def getteamid(player) :
 def get_longest_bench(week) :
 	longest_bench_data = [0, 0]
 	for i in range (1, number_of_owners + 1) :
-		page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=' + str(i) + '&week=' + str(week))
+		page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=' + str(i) + '&week=' + str(week), cookies=cookies)
 		soup = bs(page.text, 'html.parser')
 		print(i)
 		#page.close()
@@ -53,7 +61,7 @@ def get_longest_bench(week) :
 #different weeks can have different headers if players do not fill all their starting roster spots
 def get_header(week, longest_bench_teamID) :
 	url = "https://fantasy.nfl.com/league/" + leagueID + "/history/" + season + "/teamgamecenter?teamId=" +str(longest_bench_teamID) + "&week=" + str(week)
-	page = requests.get(url)
+	page = requests.get(url, cookies=cookies)
 	html = page.text
 	page.close()
 	soup = bs(html, 'html.parser') #uses the page of the teamID with the longest bench to generate the header
@@ -77,11 +85,11 @@ def get_header(week, longest_bench_teamID) :
 def getrow(teamId, week, longest_bench) : 
 
 	#loads gamecenter page as soup
-	page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=' + teamId + '&week=' + week)
+	page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=' + teamId + '&week=' + week, cookies=cookies)
 	soup = bs(page.text, 'html.parser')
 	page.close()
 
-	owner = soup.find('a', class_ = re.compile('userName userId')).text #username of the team owner
+	owner = soup.find('span', class_ = re.compile('userName userId')).text #username of the team owner
 
 	starters = soup.find('div', id = 'tableWrap-1').find_all('td', class_ = 'playerNameAndInfo')
 	starters = [starter.text for starter in starters]
@@ -122,31 +130,21 @@ def getrow(teamId, week, longest_bench) :
 	return completed_row
 
 
-#checks if a directory exists with that team name. If it doesn't it asks the user if it wants to create a new directory
-#to store the league data in.
-if not os.path.isdir('./' + league_name + '-League-History') :
-	if(input('No folder named ' + league_name + '-League-History found would you like to create a new folder with that name y/n?' ) == 'y') :
-		os.mkdir('./' + league_name + '-League-History')
-	else :
-		exit()
+# Where the csv files are written to.
+path = './output/' + league_name + '-League-History/' + season 
 
-path = './' + league_name + '-League-History/' + season #the path of the folder where the weekly csv files are stored
-
-#if that folder doesn't already exist a new one is made
+#If that folder doesn't exist a new one is made.
 if not os.path.isdir(path) :
 	os.mkdir(path)
 
-#if input("Write season data to csv y/n?") == 'y' :
-print(season)
-page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=1&week=1')
+page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=1&week=1', cookies=cookies)
 soup = bs(page.text, 'html.parser')
-#page.close()
 season_length = len(soup.find_all('li', class_ = re.compile('ww ww-'))) #determines how may unique csv files are created, total number of weeks in the season 
 
 for i in range(1, season_length + 1): #iterates through each week of the season, creating a new csv file every loop
 	longest_bench = get_longest_bench(i) #a list containing the length of the longest bench followed by the ID of the team with the longest bench
 	header = get_header(i, longest_bench[1]) #header for the csv
-	with open('./' + league_name +'-League-History/' + season + '/' + str(i) + '.csv', 'w', newline='') as f :
+	with open('./output' + league_name +'-League-History/' + season + '/' + str(i) + '.csv', 'w', newline='') as f :
 		writer = csv.writer(f)
 		writer.writerow(header) #writes header as the first line in the new csv file
 		for j in range(1, number_of_owners + 1) : #iterates through every team owner
