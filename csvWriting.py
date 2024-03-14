@@ -6,6 +6,7 @@ from urllib.request import urlopen
 import re
 import requests
 from cookieString import cookies
+from utils import get_number_of_owners, setup_output_folders
 
 leagueID = "1609009"
 league_name = "Couch Quarterbacks"
@@ -13,21 +14,7 @@ season = "2023"
 
 
 ### TODO:
-# Figure out what stats I actually want to aggregate for a nice viz
 # Fix Opponent/Opponent Total
-
-
-#gets the total numver of players in a given season
-def get_numberofowners() :
-	owners_url = 'https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/owners'
-	owners_page = requests.get(owners_url, cookies=cookies)
-	owners_html = owners_page.text
-	#owners_page.close()
-	owners_soup = bs(owners_html, 'html.parser')
-	number_of_owners = len(owners_soup.find_all('tr', class_ = re.compile('team-')))
-	return number_of_owners
-
-number_of_owners = get_numberofowners() #number of teams in the league
 
 #gets the team id number from a player name, currently unused
 def getteamid(player) :
@@ -114,7 +101,7 @@ def getrow(teamId, week, longest_bench) :
 	for i in range(len(roster)) :
 		 rosterandtotals.append(roster[i])
 
-		 #checks if there is a point total coressponding to the player, if not that spot is filled with a -
+		 #checks if there is a point total corresponding to the player, if not that spot is filled with a -
 		 try:
 		 	rosterandtotals.append(player_totals[i])
 		 except:
@@ -131,15 +118,13 @@ def getrow(teamId, week, longest_bench) :
 
 
 # Where the csv files are written to.
-path = './output/' + league_name + '-League-History/' + season 
-
-#If that folder doesn't exist a new one is made.
-if not os.path.isdir(path) :
-	os.mkdir(path)
+path = './output/' + leagueID + '-League-History/' + season 
+setup_output_folders(leagueID, season)
 
 page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=1&week=1', cookies=cookies)
 soup = bs(page.text, 'html.parser')
 season_length = len(soup.find_all('li', class_ = re.compile('ww ww-'))) #determines how may unique csv files are created, total number of weeks in the season 
+number_of_owners = get_number_of_owners(leagueID, season)
 
 for i in range(1, season_length + 1): #iterates through each week of the season, creating a new csv file every loop
 	longest_bench = get_longest_bench(i) #a list containing the length of the longest bench followed by the ID of the team with the longest bench
