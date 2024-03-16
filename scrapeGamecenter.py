@@ -7,26 +7,7 @@ import re
 import requests
 from cookieString import cookies
 from utils import get_number_of_owners, setup_output_folders
-
-leagueID = "1609009"
-league_name = "Couch Quarterbacks"
-season = "2023"
-
-
-### TODO:
-# Fix Opponent/Opponent Total
-
-#gets the team id number from a player name, currently unused
-def getteamid(player) :
-	url = 'https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/owners'
-	page = requests.get(url, cookies=cookies)
-	html = page.text
-	#page.close()
-	soup = bs(html, 'html.parser')
-	teamWraps = soup.find_all('tr', class_ = re.compile('team-'))
-	for teamWrap in teamWraps :
-		if teamWrap.find('td', class_ = 'teamOwnerName').text.strip() == player :
-			return teamWrap.attrs['class'][0].split('-')[1]
+from constants import leagueID, leagueStartYear, leagueEndYear
 
 #teams that don't fill all their starting roster spots for a week will have a longer bench
 #the more roster spots left unfilled, the more bench players that team will have
@@ -95,8 +76,7 @@ def getrow(teamId, week, longest_bench) :
 
 	teamtotals = soup.findAll('div', class_ = re.compile('teamTotal teamId-')) #the team's total points for the week
 	ranktext = soup.find('span', class_ = re.compile('teamRank teamId-')).text
-	rank = ranktext[ranktext.index('(') + 1: ranktext.index(')')]#the team's rank in the standings
-
+	rank = ranktext[ranktext.index('(') + 1: ranktext.index(')')] #the team's rank in the standings
 	rosterandtotals = [] #alternating player names and their corresponding weekly point totals
 	for i in range(len(roster)) :
 		 rosterandtotals.append(roster[i])
@@ -110,29 +90,38 @@ def getrow(teamId, week, longest_bench) :
 	#try except statement is for the situation where the league member would not have an opponent for the week
 	#in this case the Opponent and Opponent Total columns are filled with -
 	try:
-		completed_row = [owner, rank] + rosterandtotals + [teamtotals[0].text, soup.find('div', class_ = 'teamWrap teamWrap-2').find('a', re.compile('userName userId')).text, teamtotals[1].text]
+		completed_row = [owner, rank] + rosterandtotals + [teamtotals[0].text, soup.find('div', class_ = 'teamWrap teamWrap-2').find('span', re.compile('userName userId')).text, teamtotals[1].text]
 	except:
 		completed_row = [owner, rank] + rosterandtotals + [teamtotals[0].text, '-', '-']
 
 	return completed_row
 
 
-# Where the csv files are written to.
-path = './output/' + leagueID + '-League-History/' + season 
-setup_output_folders(leagueID, season)
+# Iterate through each season
+# Iterate through each week
+# Iterate through each team
+# Write team's gamecenter data to a csv file
+for s in range(leagueStartYear, leagueEndYear):
+	season = str(s)
+	# setup
+	setup_output_folders(leagueID, season)
 
-page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=1&week=1', cookies=cookies)
-soup = bs(page.text, 'html.parser')
-season_length = len(soup.find_all('li', class_ = re.compile('ww ww-'))) #determines how may unique csv files are created, total number of weeks in the season 
-number_of_owners = get_number_of_owners(leagueID, season)
+	page = requests.get('https://fantasy.nfl.com/league/' + leagueID + '/history/' + season + '/teamgamecenter?teamId=1&week=1', cookies=cookies)
+	soup = bs(page.text, 'html.parser')
+	season_length = len(soup.find_all('li', class_ = re.compile('ww ww-'))) #determines how may unique csv files are created, total number of weeks in the season 
+	number_of_owners = get_number_of_owners(leagueID, season)
 
-for i in range(1, season_length + 1): #iterates through each week of the season, creating a new csv file every loop
-	longest_bench = get_longest_bench(i) #a list containing the length of the longest bench followed by the ID of the team with the longest bench
-	header = get_header(i, longest_bench[1]) #header for the csv
-	with open('./output' + league_name +'-League-History/' + season + '/' + str(i) + '.csv', 'w', newline='') as f :
-		writer = csv.writer(f)
-		writer.writerow(header) #writes header as the first line in the new csv file
-		for j in range(1, number_of_owners + 1) : #iterates through every team owner
-			writer.writerow(getrow(str(j), str(i), longest_bench[0])) #writes a row for each owner in the csv
-	print("Week " + str(i) + " Complete")
-print("Done")
+	print("Number of Owners: " + str(number_of_owners))
+	print("Season Length: " + str(season_length))
+
+	#Iterate through each week of the season, creating a new csv file every loop
+	for i in range(1, season_length + 1): 
+		longest_bench = get_longest_bench(i) #a list containing the length of the longest bench followed by the ID of the team with the longest bench
+		header = get_header(i, longest_bench[1]) #header for the csv
+		with open('./output/' + leagueID +'-history-teamgamecenter/' + season + '/' + str(i) + '.csv', 'w', newline='') as f :
+			writer = csv.writer(f)
+			writer.writerow(header) #writes header as the first line in the new csv file
+			for j in range(1, number_of_owners + 1) : #iterates through every team owner
+				writer.writerow(getrow(str(j), str(i), longest_bench[0])) #writes a row for each owner in the csv
+		print("Week " + str(i) + " Complete")
+	print("Done")
