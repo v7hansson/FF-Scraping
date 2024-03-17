@@ -7,7 +7,7 @@ import re
 import requests
 from cookieString import cookies
 from utils import get_number_of_owners, setup_output_folders
-from constants import leagueID, leagueStartYear, leagueEndYear
+from constants import leagueID, leagueStartYear, leagueEndYear, gamecenter_directory
 
 #teams that don't fill all their starting roster spots for a week will have a longer bench
 #the more roster spots left unfilled, the more bench players that team will have
@@ -118,7 +118,7 @@ for s in range(leagueStartYear, leagueEndYear):
 	for i in range(1, season_length + 1): 
 		longest_bench = get_longest_bench(i) #a list containing the length of the longest bench followed by the ID of the team with the longest bench
 		header = get_header(i, longest_bench[1]) #header for the csv
-		with open('./output/' + leagueID +'-history-teamgamecenter/' + season + '/' + str(i) + '.csv', 'w', newline='') as f :
+		with open(gamecenter_directory + season + '/' + str(i) + '.csv', 'w', newline='') as f :
 			writer = csv.writer(f)
 			writer.writerow(header) #writes header as the first line in the new csv file
 			for j in range(1, number_of_owners + 1) : #iterates through every team owner

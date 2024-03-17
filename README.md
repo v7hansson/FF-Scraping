@@ -5,8 +5,9 @@ Reddit thread here: https://www.reddit.com/r/fantasyfootball/comments/jll2xs/i_w
 
 ## How to run this:
 
-1. git clone
-2. In constants.py, update with your league ID and start/end years
-3. In cookieString.py, update cookie string with an active NFL.com cookie. You can find this by inspecting a request in chrome dev tools ![screenshot](https://ibb.co/7bk4fmN)
+1. `git clone https://github.com/PeteTheHeat/FF-Scraping`
+2. In `constants.py`, update with your league ID and start/end years
+3. In `cookieString.py`, update cookie string with an active NFL.com cookie. You can find this by inspecting a request in chrome dev tools
+   ![screenshot](https://ibb.co/7bk4fmN)
 4. `python scrapeStandings.py` will scrape all standings. `python aggregateStandings.py` will aggregate into 1 CSV.
-5. `python scrapeGamecenter.py` will scrape all games.
+5. `python scrapeGamecenter.py` will scrape all games. `python analyzeGamecenter.py` will find biggest blowouts and narrowest margins of victory.

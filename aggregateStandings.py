@@ -2,6 +2,7 @@ import csv
 import os
 
 from utils import get_number_of_owners
+from constants import leagueID, standings_directory
 
 # Aggregates scraped standings data into a single CSV file
 # Assumptions:
@@ -10,14 +11,10 @@ from utils import get_number_of_owners
 # Initialize a dictionary to store aggregated data
 aggregated_data = {}
 
-# Directory where your CSV files are located
-leagueID = "1609009"
-directory = './output/'+ leagueID + '-history-standings/'
-
 # Iterate through each file in the directory
-for filename in os.listdir(directory):
+for filename in os.listdir(standings_directory):
     if filename.endswith(".csv"):
-        filepath = os.path.join(directory, filename)
+        filepath = os.path.join(standings_directory, filename)
         with open(filepath, 'r', newline='') as file:
             reader = csv.DictReader(file)
             num_owners = get_number_of_owners(leagueID, filename[:-4])

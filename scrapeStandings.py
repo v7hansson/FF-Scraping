@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup as bs
 import requests
 from cookieString import cookies
 from utils import setup_output_folders
-from constants import leagueID, leagueStartYear, leagueEndYear
+from constants import leagueID, leagueStartYear, leagueEndYear, standings_directory
 
 
 # Iterate through each season
@@ -89,8 +89,7 @@ for i in range(leagueStartYear, leagueEndYear):
                     csv_row.append(draft_position.text.strip()[:-1])
                 
     # Write all to a csv file
-    path = './output/' + leagueID + '-history-standings/' 
-    with open(path + season + '.csv', 'w', newline='') as f:
+    with open(standings_directory + season + '.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         header= ['TeamName', 'RegularSeasonRank', 'Record', 'PointsFor', 'PointsAgainst', 'PlayoffRank', 'ManagerName', 'Moves', "Trades", "DraftPosition"]
         writer.writerow(header) 
